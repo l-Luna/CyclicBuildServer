@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+}
+
+group 'io.github.l-Luna'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'ch.epfl.scala:bsp4j:2.0.0'
+    implementation files('libs/CyclicCompiler-0.0.2.jar')
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task fatJar(type: Jar){
+    manifest {
+        attributes 'Main-Class': 'cyclic.bsp.ServerLauncher'
+    }
+    from{
+        configurations.runtimeClasspath.collect{ it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    }
+    duplicatesStrategy "exclude"
+    with jar
+}
