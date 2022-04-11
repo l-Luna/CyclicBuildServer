@@ -18,7 +18,7 @@ public class ServerLauncher{
 		if(args.length < 2){
 			System.err.println("""
 					Usage: --server <path to project file>
-					Or:    --setupConfig <path to project file> <config file destination path> <command to run this>
+					Or:    --setupConfig <path to project file> <command to run this>
 					""");
 			System.exit(1);
 		}
@@ -37,11 +37,11 @@ public class ServerLauncher{
 			launcher.startListening().get();
 		}else if(args[0].equals("--setupConfig")){
 			// create a BSP connector file
-			var target = Path.of(args[2]);
+			var target = Path.of("."); // current directory
 			String name = "Cyclic Build Server";
 			String version = "1.0.0";
 			String bspVersion = "2.0.0";
-			List<String> argsList = new ArrayList<>(Arrays.asList(args[3].split(" ")));
+			List<String> argsList = new ArrayList<>(Arrays.asList(args[2].split(" ")));
 			argsList.add("--server");
 			argsList.add(path.toString());
 			String json = """
@@ -49,7 +49,7 @@ public class ServerLauncher{
 						"name": "%s",
 						"version": "%s",
 						"bspVersion": "%s",
-						"languages": ["cyclic"],
+						"languages": ["cyc"],
 						"argv": %s
 					}
 					""".formatted(name, version, bspVersion, argsList.stream()
