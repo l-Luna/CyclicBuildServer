@@ -101,11 +101,30 @@ public class CyclicBuildServer implements BuildServer{
 	
 	public CompletableFuture<CompileResult> buildTargetCompile(CompileParams params){
 		return supplyIfInitialized(() -> {
+			TaskId taskId = new TaskId("compile:" + params.getOriginId());
+			var target = params.getTargets().get(0);
+			client.onBuildTaskStart(startNow(
+					taskId,
+					"Compiling " + project.name,
+					TaskDataKind.COMPILE_TASK,
+					new CompileTask(target)));
 			try{
 				CompilerLauncher.main("-p", projectPath.toString());
 			}catch(CompileTimeException | ConfigurationException | TypeNotFoundException e){
+				client.onBuildTaskFinish(finishNow(
+						taskId,
+						"Compile failed with error: " + e,
+						TaskDataKind.COMPILE_REPORT,
+						new CompileReport(target, 1, 0), // we bail on first error
+						StatusCode.ERROR));
 				return new CompileResult(StatusCode.ERROR);
 			}
+			client.onBuildTaskFinish(finishNow(
+					taskId,
+					"Compiled project " + project.name,
+					TaskDataKind.COMPILE_REPORT,
+					new CompileReport(target, 0, 0), // we bail on first error
+					StatusCode.OK));
 			return new CompileResult(StatusCode.OK);
 		});
 	}
@@ -147,5 +166,23 @@ public class CyclicBuildServer implements BuildServer{
 				throw new IllegalStateException("Build server is not initialized");
 			});
 		}
+	}
+	
+	private TaskStartParams startNow(TaskId id, String message, String kind, Object data){
+		var params = new TaskStartParams(id);
+		params.setEventTime(System.currentTimeMillis());
+		params.setMessage(message);
+		params.setDataKind(kind);
+		params.setData(data);
+		return params;
+	}
+	
+	private TaskFinishParams finishNow(TaskId id, String message, String kind, Object data, StatusCode status){
+		var params = new TaskFinishParams(id, status);
+		params.setEventTime(System.currentTimeMillis());
+		params.setMessage(message);
+		params.setDataKind(kind);
+		params.setData(data);
+		return params;
 	}
 }
