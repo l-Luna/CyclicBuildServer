@@ -21,6 +21,7 @@ public class Projects{
 		// TODO: update when subprojects are supported
 		var target = new BuildTarget(projectId, tags, languages, List.of(), capabilities);
 		target.setBaseDirectory(project.root.toAbsolutePath().toUri().toString());
+		target.setDisplayName(project.name);
 		return target;
 	}
 	
