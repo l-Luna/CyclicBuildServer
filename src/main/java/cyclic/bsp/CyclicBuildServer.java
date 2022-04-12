@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-public class CyclicBuildServer implements BuildServer, JvmBuildServer{
+public class CyclicBuildServer implements BuildServer{
 	
 	private CyclicProject project;
 	private final Path projectPath;
@@ -43,7 +43,7 @@ public class CyclicBuildServer implements BuildServer, JvmBuildServer{
 			initialized = true;
 			var capabilities = new BuildServerCapabilities();
 			// we can compile cyclic, but not run/debug/test
-			capabilities.setCompileProvider(new CompileProvider(List.of("cyclic")));
+			capabilities.setCompileProvider(new CompileProvider(List.of("cyc")));
 			capabilities.setCanReload(true);
 			return new InitializeBuildResult("Cyclic Compiler", "0.0.2", "2.0.0", capabilities);
 		});
@@ -61,7 +61,7 @@ public class CyclicBuildServer implements BuildServer, JvmBuildServer{
 	}
 	
 	public void onBuildExit(){
-	
+		System.exit(0);
 	}
 	
 	public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets(){
@@ -76,7 +76,15 @@ public class CyclicBuildServer implements BuildServer, JvmBuildServer{
 	}
 	
 	public CompletableFuture<SourcesResult> buildTargetSources(SourcesParams params){
-		return null;
+		return supplyIfInitialized(() -> {
+			// we still only support one project, so we can ignore the target specified by params
+			// every SourceFolderDependency also counts as a sources folder, but that's not exposed compiler-side yet
+			BuildTargetIdentifier projectId = Projects.idFor(project);
+			String projectRoot = project.sourcePath.toAbsolutePath().toUri().toString();
+			return new SourcesResult(List.of(
+					new SourcesItem(projectId, List.of(
+							new SourceItem(projectRoot, SourceItemKind.DIRECTORY, false)))));
+		});
 	}
 	
 	public CompletableFuture<InverseSourcesResult> buildTargetInverseSources(InverseSourcesParams params){
@@ -111,7 +119,7 @@ public class CyclicBuildServer implements BuildServer, JvmBuildServer{
 	}
 	
 	public CompletableFuture<CleanCacheResult> buildTargetCleanCache(CleanCacheParams params){
-		return null;
+		return supplyIfInitialized(() -> new CleanCacheResult(null, true));
 	}
 	
 	public CompletableFuture<DependencyModulesResult> buildTargetDependencyModules(DependencyModulesParams params){
