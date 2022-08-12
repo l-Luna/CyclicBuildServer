@@ -4,10 +4,13 @@ import ch.epfl.scala.bsp4j.*;
 import cyclic.lang.compiler.configuration.CyclicProject;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
+@ParametersAreNonnullByDefault
 public class Projects{
 	
+	@NotNull
 	public static BuildTarget targetFor(CyclicProject project){
 		// every workspace only has one build target & project
 		BuildTargetIdentifier projectId = idFor(project);
@@ -27,5 +30,14 @@ public class Projects{
 	@NotNull
 	public static BuildTargetIdentifier idFor(CyclicProject project){
 		return new BuildTargetIdentifier("cyclic/" + project.name);
+	}
+	
+	@NotNull
+	public static List<SourceItem> extraSourceFolders(CyclicProject project){
+		return project.dependencies.stream()
+				.filter(x -> x.type.equals("sourceFolder"))
+				.map(x -> x.location)
+				.map(x -> new SourceItem(project.pathFromRoot(x).toAbsolutePath().toUri().toString(), SourceItemKind.DIRECTORY, false))
+				.toList();
 	}
 }

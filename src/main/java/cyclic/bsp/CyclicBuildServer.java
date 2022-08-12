@@ -10,6 +10,7 @@ import cyclic.lang.compiler.resolve.TypeNotFoundException;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -79,12 +80,11 @@ public class CyclicBuildServer implements BuildServer{
 	public CompletableFuture<SourcesResult> buildTargetSources(SourcesParams params){
 		return supplyIfInitialized(() -> {
 			// we still only support one project, so we can ignore the target specified by params
-			// every SourceFolderDependency also counts as a sources folder, but that's not exposed compiler-side yet
-			BuildTargetIdentifier projectId = Projects.idFor(project);
-			String projectRoot = project.sourcePath.toAbsolutePath().toUri().toString();
-			return new SourcesResult(List.of(
-					new SourcesItem(projectId, List.of(
-							new SourceItem(projectRoot, SourceItemKind.DIRECTORY, false)))));
+			// every SourceFolderDependency also counts as a source folder
+			String projectSources = project.sourcePath.toAbsolutePath().toUri().toString();
+			List<SourceItem> sources = new ArrayList<>(List.of(new SourceItem(projectSources, SourceItemKind.DIRECTORY, false)));
+			sources.addAll(Projects.extraSourceFolders(project));
+			return new SourcesResult(List.of(new SourcesItem(Projects.idFor(project), sources)));
 		});
 	}
 	
