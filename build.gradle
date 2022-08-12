@@ -19,6 +19,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    jvmArgs += "--enable-preview"
 }
 
 task fatJar(type: Jar){
@@ -32,4 +33,14 @@ task fatJar(type: Jar){
     }
     duplicatesStrategy "exclude"
     with jar
+}
+
+tasks.withType(JavaExec){
+    jvmArgs += "--enable-preview"
+}
+
+tasks.withType(JavaCompile){
+    sourceCompatibility = JavaVersion.VERSION_17.toString()
+    targetCompatibility = JavaVersion.VERSION_17.toString()
+    options.compilerArgs.add("--enable-preview")
 }
