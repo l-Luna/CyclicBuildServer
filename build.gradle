@@ -10,11 +10,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'ch.epfl.scala:bsp4j:2.0.0'
-    implementation files('libs/CyclicCompiler-0.0.2.jar')
+    implementation 'ch.epfl.scala:bsp4j:2.1.0-M1'
+    implementation files('libs/CyclicCompiler-0.0.4.jar')
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
 test {

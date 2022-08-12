@@ -1,10 +1,11 @@
 package cyclic.bsp;
 
 import ch.epfl.scala.bsp4j.*;
-import cyclic.lang.compiler.CompileTimeException;
 import cyclic.lang.compiler.CompilerLauncher;
 import cyclic.lang.compiler.configuration.ConfigurationException;
 import cyclic.lang.compiler.configuration.CyclicProject;
+import cyclic.lang.compiler.problems.CompileTimeException;
+import cyclic.lang.compiler.problems.ProblemsHolder;
 import cyclic.lang.compiler.resolve.TypeNotFoundException;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class CyclicBuildServer implements BuildServer{
 			// we can compile cyclic, but not run/debug/test
 			capabilities.setCompileProvider(new CompileProvider(List.of("cyc")));
 			capabilities.setCanReload(true);
-			return new InitializeBuildResult("Cyclic Compiler", "0.0.2", "2.0.0", capabilities);
+			return new InitializeBuildResult("Cyclic Compiler", "0.0.4", "2.1.0", capabilities);
 		});
 	}
 	
@@ -117,14 +118,16 @@ public class CyclicBuildServer implements BuildServer{
 						TaskDataKind.COMPILE_REPORT,
 						new CompileReport(target, 1, 0), // we bail on first error
 						StatusCode.ERROR));
+				ProblemsHolder.problems.clear();
 				return new CompileResult(StatusCode.ERROR);
 			}
 			client.onBuildTaskFinish(finishNow(
 					taskId,
 					"Compiled project " + project.name,
 					TaskDataKind.COMPILE_REPORT,
-					new CompileReport(target, 0, 0), // we bail on first error
+					new CompileReport(target, 0, ProblemsHolder.problems.size()), // we bail on first error
 					StatusCode.OK));
+			ProblemsHolder.problems.clear();
 			return new CompileResult(StatusCode.OK);
 		});
 	}
@@ -142,6 +145,10 @@ public class CyclicBuildServer implements BuildServer{
 	}
 	
 	public CompletableFuture<DependencyModulesResult> buildTargetDependencyModules(DependencyModulesParams params){
+		return null;
+	}
+	
+	public CompletableFuture<DebugSessionAddress> debugSessionStart(DebugSessionParams params){
 		return null;
 	}
 	
@@ -170,6 +177,15 @@ public class CyclicBuildServer implements BuildServer{
 	
 	private TaskStartParams startNow(TaskId id, String message, String kind, Object data){
 		var params = new TaskStartParams(id);
+		params.setEventTime(System.currentTimeMillis());
+		params.setMessage(message);
+		params.setDataKind(kind);
+		params.setData(data);
+		return params;
+	}
+	
+	private TaskProgressParams progressNow(TaskId id, String message, String kind, Object data){
+		var params = new TaskProgressParams(id);
 		params.setEventTime(System.currentTimeMillis());
 		params.setMessage(message);
 		params.setDataKind(kind);
