@@ -23,7 +23,7 @@ public class ServerLauncher{
 			System.exit(1);
 		}
 		
-		var path = Path.of(args[1]);
+		var path = Path.of(args[1]).toAbsolutePath();
 		
 		if(args[0].equals("--server")){
 			var server = new CyclicBuildServer(path);
