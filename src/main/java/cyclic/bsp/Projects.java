@@ -32,7 +32,7 @@ public class Projects{
 	
 	@NotNull
 	public static BuildTargetIdentifier idFor(CyclicProject project){
-		return new BuildTargetIdentifier("cyclic/" + project.name);
+		return new BuildTargetIdentifier("cyclic/" + project.name.replace(" ", "-"));
 	}
 	
 	@NotNull
