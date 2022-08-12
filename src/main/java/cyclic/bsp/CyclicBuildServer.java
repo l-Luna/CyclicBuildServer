@@ -152,14 +152,6 @@ public class CyclicBuildServer implements BuildServer{
 		return null;
 	}
 	
-	public CompletableFuture<JvmRunEnvironmentResult> jvmRunEnvironment(JvmRunEnvironmentParams params){
-		return null;
-	}
-	
-	public CompletableFuture<JvmTestEnvironmentResult> jvmTestEnvironment(JvmTestEnvironmentParams params){
-		return null;
-	}
-	
 	public void setClient(BuildClient client){
 		this.client = client;
 	}
