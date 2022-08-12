@@ -10,10 +10,12 @@ import cyclic.lang.compiler.resolve.TypeNotFoundException;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+
+import static cyclic.bsp.Projects.*;
+import static cyclic.bsp.Projects.idFor;
 
 public class CyclicBuildServer implements BuildServer{
 	
@@ -46,6 +48,8 @@ public class CyclicBuildServer implements BuildServer{
 			var capabilities = new BuildServerCapabilities();
 			// we can compile cyclic, but not run/debug/test
 			capabilities.setCompileProvider(new CompileProvider(List.of("cyc")));
+			capabilities.setDependencyModulesProvider(true);
+			capabilities.setDependencySourcesProvider(true);
 			capabilities.setCanReload(true);
 			return new InitializeBuildResult("Cyclic Compiler", "0.0.4", "2.1.0", capabilities);
 		});
@@ -67,7 +71,7 @@ public class CyclicBuildServer implements BuildServer{
 	}
 	
 	public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets(){
-		return supplyIfInitialized(() -> new WorkspaceBuildTargetsResult(List.of(Projects.targetFor(project))));
+		return supplyIfInitialized(() -> new WorkspaceBuildTargetsResult(List.of(targetFor(project))));
 	}
 	
 	public CompletableFuture<Object> workspaceReload(){
@@ -80,24 +84,27 @@ public class CyclicBuildServer implements BuildServer{
 	public CompletableFuture<SourcesResult> buildTargetSources(SourcesParams params){
 		return supplyIfInitialized(() -> {
 			// we still only support one project, so we can ignore the target specified by params
-			// every SourceFolderDependency also counts as a source folder
 			String projectSources = project.sourcePath.toAbsolutePath().toUri().toString();
-			List<SourceItem> sources = new ArrayList<>(List.of(new SourceItem(projectSources, SourceItemKind.DIRECTORY, false)));
-			sources.addAll(Projects.extraSourceFolders(project));
-			return new SourcesResult(List.of(new SourcesItem(Projects.idFor(project), sources)));
+			List<SourceItem> sources = List.of(new SourceItem(projectSources, SourceItemKind.DIRECTORY, false));
+			return new SourcesResult(List.of(new SourcesItem(idFor(project), sources)));
 		});
 	}
 	
-	public CompletableFuture<InverseSourcesResult> buildTargetInverseSources(InverseSourcesParams params){
-		return null;
-	}
-	
 	public CompletableFuture<DependencySourcesResult> buildTargetDependencySources(DependencySourcesParams params){
-		return null;
+		return supplyIfInitialized(() -> new DependencySourcesResult(List.of(new DependencySourcesItem(
+				idFor(project),
+				dependencySources(project)
+						.stream()
+						.map(x -> x.toAbsolutePath().toUri().toString())
+						.toList())
+		)));
 	}
 	
-	public CompletableFuture<ResourcesResult> buildTargetResources(ResourcesParams params){
-		return null;
+	public CompletableFuture<DependencyModulesResult> buildTargetDependencyModules(DependencyModulesParams params){
+		return supplyIfInitialized(() -> new DependencyModulesResult(List.of(new DependencyModulesItem(
+				idFor(project),
+				dependencyModules(project))
+		)));
 	}
 	
 	public CompletableFuture<CompileResult> buildTargetCompile(CompileParams params){
@@ -132,19 +139,23 @@ public class CyclicBuildServer implements BuildServer{
 		});
 	}
 	
+	public CompletableFuture<CleanCacheResult> buildTargetCleanCache(CleanCacheParams params){
+		return supplyIfInitialized(() -> new CleanCacheResult(null, true));
+	}
+	
+	public CompletableFuture<InverseSourcesResult> buildTargetInverseSources(InverseSourcesParams params){
+		return null;
+	}
+	
+	public CompletableFuture<ResourcesResult> buildTargetResources(ResourcesParams params){
+		return null;
+	}
+	
 	public CompletableFuture<TestResult> buildTargetTest(TestParams params){
 		return null;
 	}
 	
 	public CompletableFuture<RunResult> buildTargetRun(RunParams params){
-		return null;
-	}
-	
-	public CompletableFuture<CleanCacheResult> buildTargetCleanCache(CleanCacheParams params){
-		return supplyIfInitialized(() -> new CleanCacheResult(null, true));
-	}
-	
-	public CompletableFuture<DependencyModulesResult> buildTargetDependencyModules(DependencyModulesParams params){
 		return null;
 	}
 	

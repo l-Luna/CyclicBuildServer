@@ -1,10 +1,13 @@
 package cyclic.bsp;
 
 import ch.epfl.scala.bsp4j.*;
+import cyclic.lang.compiler.configuration.CyclicPackage;
 import cyclic.lang.compiler.configuration.CyclicProject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 @ParametersAreNonnullByDefault
@@ -33,11 +36,27 @@ public class Projects{
 	}
 	
 	@NotNull
-	public static List<SourceItem> extraSourceFolders(CyclicProject project){
-		return project.dependencies.stream()
-				.filter(x -> x.type.equals("sourceFolder"))
-				.map(x -> x.location)
-				.map(x -> new SourceItem(project.pathFromRoot(x).toAbsolutePath().toUri().toString(), SourceItemKind.DIRECTORY, false))
-				.toList();
+	public static List<Path> dependencySources(CyclicProject project){
+		List<Path> ret = new ArrayList<>();
+		for(CyclicPackage dep : project.dependencies)
+			if(dep.type.equals("sourceFolder") || dep.type.equals("jar")){
+				String location = dep.location;
+				Path path = project.pathFromRoot(location);
+				ret.add(path);
+			}
+		return ret;
+	}
+	
+	public static List<DependencyModule> dependencyModules(CyclicProject project){
+		List<DependencyModule> ret = new ArrayList<>();
+		for(CyclicPackage dep : project.dependencies)
+			if(dep.type.equals("mavenJar")){
+				var module = new DependencyModule(dep.name, dep.version);
+				var split = dep.name.split(":");
+				module.setDataKind("maven");
+				module.setData(new MavenDependencyModule(split[0], split[1], dep.version, List.of()));
+				ret.add(module);
+			}
+		return ret;
 	}
 }
