@@ -121,7 +121,7 @@ public class CyclicBuildServer implements BuildServer{
 			var err = new PrintStream(data, true, StandardCharsets.UTF_8);
 			System.setErr(err);
 			try{
-				CompilerLauncher.main("-p", projectPath.toString(), "--throwOnError");
+				CompilerLauncher.main("-p", projectPath.toString(), "--throwOnError", "--noColour");
 			}catch(RuntimeException e){
 				client.onBuildTaskFinish(finishNow(
 						taskId,
