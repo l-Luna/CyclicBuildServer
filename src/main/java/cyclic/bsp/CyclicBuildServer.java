@@ -2,20 +2,19 @@ package cyclic.bsp;
 
 import ch.epfl.scala.bsp4j.*;
 import cyclic.lang.compiler.CompilerLauncher;
-import cyclic.lang.compiler.configuration.ConfigurationException;
 import cyclic.lang.compiler.configuration.CyclicProject;
-import cyclic.lang.compiler.problems.CompileTimeException;
 import cyclic.lang.compiler.problems.ProblemsHolder;
-import cyclic.lang.compiler.resolve.TypeNotFoundException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import static cyclic.bsp.Projects.*;
-import static cyclic.bsp.Projects.idFor;
 
 public class CyclicBuildServer implements BuildServer{
 	
@@ -116,23 +115,31 @@ public class CyclicBuildServer implements BuildServer{
 					"Compiling " + project.name,
 					TaskDataKind.COMPILE_TASK,
 					new CompileTask(target)));
+			// capture error output
+			var origErr = System.err;
+			var data = new ByteArrayOutputStream();
+			var err = new PrintStream(data, true, StandardCharsets.UTF_8);
+			System.setErr(err);
 			try{
-				CompilerLauncher.main("-p", projectPath.toString());
-			}catch(CompileTimeException | ConfigurationException | TypeNotFoundException e){
+				CompilerLauncher.main("-p", projectPath.toString(), "--throwOnError");
+			}catch(RuntimeException e){
 				client.onBuildTaskFinish(finishNow(
 						taskId,
-						"Compile failed with error: " + e,
+						data.toString(StandardCharsets.UTF_8),
 						TaskDataKind.COMPILE_REPORT,
-						new CompileReport(target, 1, 0), // we bail on first error
+						new CompileReport(target, 1, 0),
 						StatusCode.ERROR));
 				ProblemsHolder.problems.clear();
+				// CompilerLauncher.compileErrors is currently auto-cleared so we can't check actual error count
 				return new CompileResult(StatusCode.ERROR);
+			}finally{
+				System.setErr(origErr);
 			}
 			client.onBuildTaskFinish(finishNow(
 					taskId,
 					"Compiled project " + project.name,
 					TaskDataKind.COMPILE_REPORT,
-					new CompileReport(target, 0, ProblemsHolder.problems.size()), // we bail on first error
+					new CompileReport(target, 0, ProblemsHolder.problems.size()),
 					StatusCode.OK));
 			ProblemsHolder.problems.clear();
 			return new CompileResult(StatusCode.OK);
